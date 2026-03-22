@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PathGenius — מאיץ למידה אישי</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0b15;--surface:#111120;--card:#171728;--border:#252540;--border2:#32325a;
+  --teal:#22d3ee;--teal-dim:rgba(34,211,238,.08);--teal-glow:rgba(34,211,238,.18);
+  --text:#ddddf0;--muted:#6868a0;--green:#1de98b;--red:#ff4d6d;--gold:#e8b923;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+  display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem 4rem;
+  background-image:radial-gradient(ellipse 70% 50% at 15% 10%,rgba(34,211,238,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 85%,rgba(232,185,35,.04) 0%,transparent 60%);}
+.app{width:100%;max-width:1000px;background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03) inset;}
+
+/* ── HEADER ── */
+.app-header{background:linear-gradient(135deg,#0d1520,#0f0f1f);border-bottom:1px solid var(--border);
+  padding:16px 26px;display:flex;justify-content:space-between;align-items:center;}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--teal),#67e8f9);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;color:#0b0b15;font-size:17px;flex-shrink:0;
+  box-shadow:0 4px 14px rgba(34,211,238,.35);}
+.logo h1{font-size:1.15rem;font-weight:900;letter-spacing:-.01em}
+.logo p{font-size:.68rem;color:var(--muted);margin-top:1px}
+
+/* ── PROGRESS ── */
+.global-progress{height:3px;background:var(--border);overflow:hidden;transition:opacity .4s;}
+.global-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),#67e8f9);
+  transition:width .6s cubic-bezier(.25,.46,.45,.94);width:0%;}
+
+/* ── STEPS BAR ── */
+.steps-bar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 28px;
+  display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;}
+.steps-bar::-webkit-scrollbar{display:none}
+.sdot{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.sdot-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);transition:all .3s;}
+.sdot-label{font-size:10px;color:var(--muted);white-space:nowrap;transition:color .3s}
+.sdot.active .sdot-circle{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.sdot.active .sdot-label{color:var(--teal)}
+.sdot.done .sdot-circle{border-color:var(--green);background:rgba(29,233,139,.08);color:var(--green)}
+.sdot.done .sdot-label{color:var(--green)}
+.sline{flex:1;height:1px;background:var(--border);min-width:18px;transition:background .3s}
+.sline.done{background:rgba(29,233,139,.3)}
+
+/* ── PANELS ── */
+.panel{display:none;flex-direction:column}
+.panel.active{display:flex;animation:panelIn .35s cubic-bezier(.25,.46,.45,.94)}
+@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.field input,.field textarea{background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+  padding:10px 14px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.9rem;
+  outline:none;resize:none;transition:border-color .2s,box-shadow .2s;}
+.field input:focus,.field textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(34,211,238,.1);}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;
+  font-family:'Heebo',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;border:none;
+  transition:all .2s;white-space:nowrap;text-decoration:none;}
+.btn-primary{background:linear-gradient(135deg,var(--teal),#67e8f9);color:#0b0b15;box-shadow:0 4px 14px rgba(34,211,238,.25);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(34,211,238,.4)}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-dark{background:var(--card);color:var(--text);border:1.5px solid var(--border)}
+.btn-dark:hover{border-color:var(--teal);color:var(--teal)}
+.btn-green{background:rgba(29,233,139,.1);color:var(--green);border:1.5px solid rgba(29,233,139,.3)}
+.btn-green:hover{background:rgba(29,233,139,.18)}
+.btn-danger{background:rgba(255,77,109,.12);color:var(--red);border:1.5px solid rgba(255,77,109,.35);}
+.btn-danger:hover{background:rgba(255,77,109,.22)}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+
+/* ── TEXT AREAS ── */
+.prompt-box{background:#07070f;border:1px solid var(--border);border-radius:12px;padding:16px;
+  color:#7dd3fc;font-family:'Fira Code','Courier New',monospace;font-size:.76rem;line-height:1.8;
+  resize:none;width:100%;outline:none;transition:border-color .2s;}
+.prompt-box:focus{border-color:var(--teal)}
+.paste-box{background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:16px;
+  color:var(--text);font-family:'Fira Code','Courier New',monospace;font-size:.76rem;
+  resize:none;width:100%;outline:none;transition:border-color .2s,border-style .2s,box-shadow .2s;}
+.paste-box:focus{border-color:var(--teal);border-style:solid}
+.paste-box::placeholder{color:var(--muted)}
+
+/* ── TABS ── */
+.tab-bar{display:flex;border-bottom:1px solid var(--border)}
+.tab-btn{padding:9px 18px;font-size:.83rem;font-weight:700;color:var(--muted);border:none;
+  border-bottom:2px solid transparent;background:transparent;cursor:pointer;
+  font-family:'Heebo',sans-serif;transition:all .2s;margin-bottom:-1px;}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── ERROR / COPY ── */
+.err-msg{display:none;align-items:flex-start;gap:6px;color:var(--red);font-size:.82rem;margin-top:4px;line-height:1.5;}
+.err-msg.show{display:flex}
+.err-msg i{flex-shrink:0;margin-top:2px}
+.copy-badge{position:absolute;top:10px;left:10px;background:var(--green);color:#07070f;
+  font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:6px;opacity:0;transition:opacity .25s;pointer-events:none;}
+.copy-badge.show{opacity:1}
+.repair-wrap{display:none;flex-direction:column;gap:8px;
+  background:rgba(232,185,35,.06);border:1px solid rgba(232,185,35,.28);border-radius:10px;padding:14px;}
+
+/* ── SECTION HEADERS ── */
+.sec-title{font-size:1.35rem;font-weight:900;letter-spacing:-.02em}
+.sec-sub{color:var(--muted);font-size:.85rem;margin-top:5px}
+
+/* ── QUESTION CARDS ── */
+.q-progress-wrap{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:4px;}
+.q-progress-bar{height:5px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:6px;}
+.q-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),#67e8f9);transition:width .4s cubic-bezier(.25,.46,.45,.94);width:0%;}
+.q-progress-text{font-size:.76rem;color:var(--muted);display:flex;justify-content:space-between;}
+
+.questions-scroll{display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;padding-right:4px;}
+.questions-scroll::-webkit-scrollbar{width:4px}
+.questions-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.question-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;
+  padding:18px 20px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s,box-shadow .2s;}
+.question-card.answered{border-color:rgba(34,211,238,.35);box-shadow:0 0 0 3px rgba(34,211,238,.06);}
+.q-header{display:flex;gap:10px;align-items:flex-start}
+.q-num{width:26px;height:26px;border-radius:50%;background:var(--teal-dim);border:1.5px solid rgba(34,211,238,.3);
+  color:var(--teal);font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;}
+.question-card.answered .q-num{background:rgba(29,233,139,.1);border-color:rgba(29,233,139,.35);color:var(--green);}
+.q-text{font-size:.93rem;font-weight:700;line-height:1.55;flex:1}
+.q-badge{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+  padding:3px 8px;border-radius:20px;border:1px solid;flex-shrink:0;margin-top:3px;}
+.q-badge-single{color:var(--gold);border-color:rgba(232,185,35,.3);background:rgba(232,185,35,.07)}
+.q-badge-multi{color:var(--teal);border-color:rgba(34,211,238,.3);background:var(--teal-dim)}
+.q-options{display:flex;flex-wrap:wrap;gap:8px}
+.q-option{padding:7px 14px;border-radius:8px;font-size:.83rem;font-weight:600;
+  border:1.5px solid var(--border);background:var(--surface);color:var(--muted);
+  cursor:pointer;transition:all .18s;user-select:none;}
+.q-option:hover{border-color:var(--border2);color:var(--text)}
+.q-option.sel{background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.5);color:var(--teal);}
+.q-free-wrap{display:flex;flex-direction:column;gap:5px;}
+.q-free-label{font-size:.71rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.q-free{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;
+  padding:8px 12px;color:var(--text);font-family:'Heebo',sans-serif;font-size:.83rem;
+  outline:none;resize:none;width:100%;transition:border-color .2s;min-height:56px;}
+.q-free:focus{border-color:var(--teal)}
+.q-free::placeholder{color:var(--muted)}
+
+/* ── RECOMMENDATIONS PREVIEW ── */
+.rec-preview{background:#f8f7fe;color:#18181e;direction:rtl;
+  padding:2.5rem;overflow-y:auto;max-height:75vh;scroll-behavior:smooth;}
+.rec-preview::-webkit-scrollbar{width:5px}
+.rec-preview::-webkit-scrollbar-thumb{background:#c4bfee;border-radius:3px}
+
+.rec-header-card{background:linear-gradient(135deg,#1e0d50,#3a22a0);border-radius:16px;
+  padding:2rem;margin-bottom:1.5rem;color:white;position:relative;overflow:hidden;}
+.rec-header-card::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;
+  border-radius:50%;background:rgba(255,255,255,.05);}
+.rec-header-card::after{content:'';position:absolute;bottom:-50px;left:-30px;width:150px;height:150px;
+  border-radius:50%;background:rgba(34,211,238,.08);}
+.rec-level-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 14px;
+  font-size:.78rem;font-weight:800;margin-bottom:.75rem;position:relative;z-index:1;}
+.rec-header-title{font-size:1.6rem;font-weight:900;margin-bottom:.5rem;line-height:1.2;position:relative;z-index:1;}
+.rec-header-summary{font-size:.86rem;line-height:1.85;opacity:.88;position:relative;z-index:1;
+  white-space:pre-line;}
+
+.rec-section-title{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em;
+  color:#7c68d0;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.rec-section-title::after{content:'';flex:1;height:1px;background:#e8e6ff;}
+
+.rec-assessment-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+@media(max-width:550px){.rec-assessment-grid{grid-template-columns:1fr}}
+.rec-assess-card{background:white;border:1px solid #e8e6ff;border-radius:12px;padding:16px;}
+.rec-assess-card h4{font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+.rec-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:20px;
+  font-size:.75rem;font-weight:700;margin:3px;border:1px solid;}
+.rec-tag-green{background:#e8fff4;color:#0a6b42;border-color:#b3f0d6}
+.rec-tag-red{background:#fff0f3;color:#9e1530;border-color:#ffc0cc}
+
+.rec-phase{border:1px solid #e8e6ff;border-radius:12px;padding:16px 16px 16px 20px;
+  margin-bottom:12px;background:white;position:relative;overflow:hidden;}
+.rec-phase-bar{position:absolute;right:0;top:0;bottom:0;width:5px;}
+.rec-phase-num{font-size:.67rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.rec-phase-title{font-size:1rem;font-weight:900;color:#2a1660;margin-bottom:8px;}
+.rec-phase-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.rec-chip{font-size:.74rem;color:#555;background:#f5f4ff;padding:3px 10px;border-radius:20px;border:1px solid #ddd;display:inline-flex;align-items:center;gap:4px;}
+.rec-phase-activities{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+.rec-phase-activity{display:flex;align-items:flex-start;gap:7px;font-size:.82rem;line-height:1.5;color:#333;}
+.rec-phase-activity-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px;}
+.rec-milestone{background:#f0f9ff;border:1px solid #bee3f8;border-radius:8px;
+  padding:8px 12px;font-size:.81rem;color:#0a4d78;display:flex;align-items:flex-start;gap:7px;}
+.rec-milestone i{margin-top:1px;flex-shrink:0;}
+
+.rec-resource-group{border:1px solid #e8e6ff;border-radius:12px;margin-bottom:12px;overflow:hidden;background:white;}
+.rec-resource-group-header{background:#f5f4ff;padding:10px 16px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #e8e6ff;}
+.rec-resource-group-header .cat-icon{font-size:1rem;}
+.rec-resource-group-header .cat-name{font-size:.83rem;font-weight:800;color:#3a22a0;}
+.rec-resource-item{padding:12px 16px;border-bottom:1px solid #f0eeff;}
+.rec-resource-item:last-child{border-bottom:none}
+.rec-resource-name{font-size:.88rem;font-weight:800;color:#2a1660;margin-bottom:3px;display:flex;align-items:center;gap:7px;}
+.rec-resource-desc{font-size:.79rem;color:#555;line-height:1.5;margin-bottom:4px;}
+.rec-resource-why{font-size:.76rem;color:#7c68d0;font-style:italic;}
+.rec-priority{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.66rem;font-weight:800;}
+.rec-priority-must{background:#e8fff4;color:#0a6b42;border:1px solid #b3f0d6}
+.rec-priority-rec{background:#fff8e1;color:#7a5500;border:1px solid #f5c842}
+.rec-priority-opt{background:#f5f4ff;color:#7c68d0;border:1px solid #d0c8ff}
+
+.rec-list-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem;}
+@media(max-width:650px){.rec-list-grid{grid-template-columns:1fr}}
+.rec-list-card{background:white;border:1px solid #e8e6ff;border-radius:12px;padding:16px;}
+.rec-list-card h4{font-size:.75rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.rec-list-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;
+  border-bottom:1px solid #f0eeff;font-size:.82rem;line-height:1.55;color:#333;}
+.rec-list-item:last-child{border-bottom:none}
+.rec-list-icon{flex-shrink:0;width:18px;text-align:center;margin-top:2px;}
+
+.rec-schedule-list{display:flex;flex-direction:column;gap:8px;}
+.rec-session{background:white;border:1px solid #e8e6ff;border-radius:10px;padding:12px 16px;
+  display:flex;align-items:center;gap:14px;}
+.rec-session-num{width:28px;height:28px;border-radius:50%;background:#f0eeff;border:1.5px solid #d0c8ff;
+  color:#7c68d0;font-size:.75rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rec-session-info{flex:1;}
+.rec-session-focus{font-size:.86rem;font-weight:700;color:#2a1660;margin-bottom:2px;}
+.rec-session-meta{font-size:.75rem;color:#888;display:flex;gap:10px;}
+
+.rec-vision-card{background:linear-gradient(135deg,#14073d,#2a1660);
+  border-radius:14px;padding:1.75rem;color:white;margin-bottom:.5rem;}
+.rec-vision-card h4{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  color:#a599ff;margin-bottom:.75rem;display:flex;align-items:center;gap:7px;}
+.rec-vision-card p{font-size:.9rem;line-height:1.9;opacity:.92;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;
+  align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  width:100%;max-width:420px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 30px 70px rgba(0,0,0,.6);animation:mbIn .22s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mbIn{from{transform:scale(.94) translateY(10px)}to{transform:scale(1) translateY(0)}}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:center;gap:10px;}
+.confirm-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.45rem;margin:0 auto 14px;}
+.confirm-icon.danger{background:rgba(255,77,109,.12);border:1.5px solid rgba(255,77,109,.3)}
+.confirm-icon.info{background:rgba(29,233,139,.12);border:1.5px solid rgba(29,233,139,.3)}
+
+/* ── TOAST ── */
+#toastWrap{position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--card);border:1px solid var(--green);border-radius:10px;
+  padding:10px 16px;font-size:.83rem;font-weight:700;color:var(--green);
+  display:flex;align-items:center;gap:8px;pointer-events:none;
+  animation:tIn .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.toast.terr{border-color:var(--red);color:var(--red)}
+.toast.tinfo{border-color:var(--teal);color:var(--teal)}
+.toast.fadeout{animation:tOut .3s ease forwards}
+@keyframes tIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0;transform:translateX(-16px)}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- ── HEADER ── -->
+<header class="app-header">
+  <div class="logo">
+    <div class="logo-icon"><i class="fas fa-route"></i></div>
+    <div><h1>PathGenius</h1><p id="headerSub">v1.0 — מאיץ למידה אישי בעזרת AI</p></div>
+  </div>
+  <button onclick="resetApp()" class="btn btn-ghost" style="padding:7px 14px;font-size:.8rem">
+    <i class="fas fa-redo" style="font-size:.72rem"></i> איפוס
+  </button>
+</header>
+<div class="global-progress" id="gbar" style="opacity:0"><div class="global-progress-fill" id="gfill"></div></div>
+
+<!-- ── STEPS BAR ── -->
+<div class="steps-bar">
+  <div class="sdot active" id="sdot1"><div class="sdot-circle">1</div><div class="sdot-label">הגדרת נושא</div></div>
+  <div class="sline" id="sline1"></div>
+  <div class="sdot" id="sdot2"><div class="sdot-circle">2</div><div class="sdot-label">שאלות כלליות</div></div>
+  <div class="sline" id="sline2"></div>
+  <div class="sdot" id="sdot3"><div class="sdot-circle">3</div><div class="sdot-label">שאלות אישיות</div></div>
+  <div class="sline" id="sline3"></div>
+  <div class="sdot" id="sdot4"><div class="sdot-circle">4</div><div class="sdot-label">המלצות סופיות</div></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- STEP 1: Topic                              -->
+<!-- ══════════════════════════════════════════ -->
+<div id="step1" class="panel" style="padding:32px;gap:22px">
+  <div style="text-align:center;padding-bottom:4px">
+    <p style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:8px">שלב ראשון</p>
+    <h2 class="sec-title">🎯 הגדרת מטרת הלמידה</h2>
+    <p class="sec-sub">ספר לנו מה תרצה ללמוד — ניצור עבורך מסלול התקדמות מותאם אישית</p>
+  </div>
+  <div class="form-grid">
+    <div class="field">
+      <label>נושא / תחום הלמידה *</label>
+      <input type="text" id="s1_topic" placeholder="למשל: נגינה בגיטרה, פייתון, שחמט...">
+    </div>
+    <div class="field">
+      <label>מה הרמה הנוכחית שלך? *</label>
+      <input type="text" id="s1_level" placeholder="למשל: מתחיל לגמרי, יש לי קצת ניסיון...">
+    </div>
+  </div>
+  <div class="field">
+    <label>ספר על עצמך ועל המטרה שלך *</label>
+    <textarea id="s1_details" rows="4" placeholder="מה גרם לך לרצות ללמוד את זה? מה הייתה מטרתך? יש מגבלות זמן, תקציב, ציוד? מה נסית בעבר?"></textarea>
+  </div>
+  <div style="display:flex;justify-content:flex-end">
+    <button onclick="step1Submit()" class="btn btn-primary" style="padding:12px 28px;font-size:.95rem">
+      צור שאלות אבחון כלליות <i class="fas fa-arrow-left"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- STEP 2: General Questions                  -->
+<!-- ══════════════════════════════════════════ -->
+<div id="step2" class="panel" style="padding:24px 28px;gap:18px">
+  <div>
+    <p style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:6px">שלב שני</p>
+    <h2 class="sec-title">🔍 שאלות אבחון כלליות</h2>
+    <p class="sec-sub">10 שאלות שיעזרו לנו להבין את הרקע שלך בתחום</p>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="s2t1" onclick="setQTab(2,'prompt')">1. שלח ל-LLM</button>
+    <button class="tab-btn" id="s2t2" onclick="setQTab(2,'paste')">2. הדבק תשובה</button>
+    <button class="tab-btn" id="s2t3" onclick="setQTab(2,'questions')" style="display:none">3. ענה על השאלות</button>
+  </div>
+  <!-- Prompt tab -->
+  <div id="s2p_prompt" style="display:flex;flex-direction:column;gap:12px">
+    <p style="font-size:.82rem;color:var(--muted)">הפרומפט הועתק ללוח הגזירים. שלח אותו ל-ChatGPT, Gemini, Claude או כל LLM.</p>
+    <div style="position:relative"><textarea id="s2_prompt" class="prompt-box" rows="16" readonly dir="ltr"></textarea><div class="copy-badge" id="s2_badge">✓ הועתק!</div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="copyText('s2_prompt','s2_badge')" class="btn btn-dark"><i class="fas fa-copy"></i> העתק שוב</button>
+      <button onclick="setQTab(2,'paste')" class="btn btn-primary">קיבלתי תשובה <i class="fas fa-arrow-left"></i></button>
+    </div>
+  </div>
+  <!-- Paste tab -->
+  <div id="s2p_paste" style="display:none;flex-direction:column;gap:12px">
+    <p style="font-size:.82rem;color:var(--muted)">הדבק את תגובת ה-LLM. הכלי ייחלץ את ה-JSON ויציג את השאלות.</p>
+    <textarea id="s2_paste" class="paste-box" rows="12" placeholder="הדבק את תגובת ה-LLM כאן..." dir="ltr"></textarea>
+    <div class="err-msg" id="s2_err"><i class="fas fa-exclamation-circle"></i><span id="s2_errMsg"></span></div>
+    <div id="s2_repair" class="repair-wrap">
+      <p style="font-size:.84rem;color:var(--gold);font-weight:800"><i class="fas fa-wrench"></i> פרומפט תיקון אוטומטי</p>
+      <div style="position:relative"><textarea id="s2_repairPrompt" class="prompt-box" rows="8" readonly dir="ltr" style="font-size:.72rem"></textarea><div class="copy-badge" id="s2_repairBadge">✓ הועתק!</div></div>
+      <button onclick="copyText('s2_repairPrompt','s2_repairBadge')" class="btn btn-dark" style="font-size:.8rem;padding:8px 14px;align-self:flex-start"><i class="fas fa-copy"></i> העתק פרומפט תיקון</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="setQTab(2,'prompt')" class="btn btn-ghost"><i class="fas fa-arrow-right"></i> חזור</button>
+      <button onclick="processQs(2)" class="btn btn-primary"><i class="fas fa-cogs"></i> עבד ותציג שאלות</button>
+    </div>
+  </div>
+  <!-- Questions tab -->
+  <div id="s2p_questions" style="display:none;flex-direction:column;gap:14px">
+    <div class="q-progress-wrap">
+      <div class="q-progress-bar"><div class="q-progress-fill" id="s2_progFill"></div></div>
+      <div class="q-progress-text"><span id="s2_progText">0 מתוך 10 שאלות נענו</span><span style="color:var(--teal);font-weight:800">ענה על כל השאלות להמשך</span></div>
+    </div>
+    <div class="questions-scroll" id="s2_qContainer"></div>
+    <div style="display:flex;justify-content:flex-end;padding-top:4px">
+      <button id="s2_nextBtn" onclick="proceedToStep3()" class="btn btn-primary" disabled>
+        המשך לשאלות אישיות <i class="fas fa-arrow-left"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- STEP 3: Personal Questions                 -->
+<!-- ══════════════════════════════════════════ -->
+<div id="step3" class="panel" style="padding:24px 28px;gap:18px">
+  <div>
+    <p style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:6px">שלב שלישי</p>
+    <h2 class="sec-title">🎯 שאלות מותאמות אישית</h2>
+    <p class="sec-sub">10 שאלות שנבנו עבורך ספציפית על בסיס התשובות שלך</p>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="s3t1" onclick="setQTab(3,'prompt')">1. שלח ל-LLM</button>
+    <button class="tab-btn" id="s3t2" onclick="setQTab(3,'paste')">2. הדבק תשובה</button>
+    <button class="tab-btn" id="s3t3" onclick="setQTab(3,'questions')" style="display:none">3. ענה על השאלות</button>
+  </div>
+  <div id="s3p_prompt" style="display:flex;flex-direction:column;gap:12px">
+    <p style="font-size:.82rem;color:var(--muted)">הפרומפט הועתק ללוח. שלח אותו ל-LLM — הוא כבר מכיל את כל תשובותיך.</p>
+    <div style="position:relative"><textarea id="s3_prompt" class="prompt-box" rows="16" readonly dir="ltr"></textarea><div class="copy-badge" id="s3_badge">✓ הועתק!</div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="goStep(2)" class="btn btn-ghost"><i class="fas fa-arrow-right"></i> חזור</button>
+      <div style="display:flex;gap:10px">
+        <button onclick="copyText('s3_prompt','s3_badge')" class="btn btn-dark"><i class="fas fa-copy"></i> העתק שוב</button>
+        <button onclick="setQTab(3,'paste')" class="btn btn-primary">קיבלתי תשובה <i class="fas fa-arrow-left"></i></button>
+      </div>
+    </div>
+  </div>
+  <div id="s3p_paste" style="display:none;flex-direction:column;gap:12px">
+    <p style="font-size:.82rem;color:var(--muted)">הדבק את תגובת ה-LLM עם השאלות האישיות.</p>
+    <textarea id="s3_paste" class="paste-box" rows="12" placeholder="הדבק את תגובת ה-LLM כאן..." dir="ltr"></textarea>
+    <div class="err-msg" id="s3_err"><i class="fas fa-exclamation-circle"></i><span id="s3_errMsg"></span></div>
+    <div id="s3_repair" class="repair-wrap">
+      <p style="font-size:.84rem;color:var(--gold);font-weight:800"><i class="fas fa-wrench"></i> פרומפט תיקון אוטומטי</p>
+      <div style="position:relative"><textarea id="s3_repairPrompt" class="prompt-box" rows="8" readonly dir="ltr" style="font-size:.72rem"></textarea><div class="copy-badge" id="s3_repairBadge">✓ הועתק!</div></div>
+      <button onclick="copyText('s3_repairPrompt','s3_repairBadge')" class="btn btn-dark" style="font-size:.8rem;padding:8px 14px;align-self:flex-start"><i class="fas fa-copy"></i> העתק פרומפט תיקון</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="setQTab(3,'prompt')" class="btn btn-ghost"><i class="fas fa-arrow-right"></i> חזור</button>
+      <button onclick="processQs(3)" class="btn btn-primary"><i class="fas fa-cogs"></i> עבד ותציג שאלות</button>
+    </div>
+  </div>
+  <div id="s3p_questions" style="display:none;flex-direction:column;gap:14px">
+    <div class="q-progress-wrap">
+      <div class="q-progress-bar"><div class="q-progress-fill" id="s3_progFill"></div></div>
+      <div class="q-progress-text"><span id="s3_progText">0 מתוך 10 שאלות נענו</span><span style="color:var(--teal);font-weight:800">ענה על כל השאלות להמשך</span></div>
+    </div>
+    <div class="questions-scroll" id="s3_qContainer"></div>
+    <div style="display:flex;justify-content:flex-end;padding-top:4px">
+      <button id="s3_nextBtn" onclick="proceedToStep4()" class="btn btn-primary" disabled>
+        קבל המלצות מותאמות אישית <i class="fas fa-star"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- STEP 4: Final Recommendations             -->
+<!-- ══════════════════════════════════════════ -->
+<div id="step4" class="panel" style="flex-direction:column">
+  <div style="padding:20px 28px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--border)">
+    <div>
+      <p style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);margin-bottom:4px">שלב רביעי</p>
+      <h2 class="sec-title" id="s4_title">🏆 המלצות סופיות</h2>
+      <p class="sec-sub" id="s4_sub">תוכנית למידה מותאמת אישית</p>
+    </div>
+    <div id="s4_actions" style="display:none;gap:8px;flex-wrap:wrap">
+      <button onclick="goStep(3)" class="btn btn-ghost" style="font-size:.8rem;padding:8px 14px"><i class="fas fa-edit"></i> ערוך</button>
+      <button onclick="downloadRecs()" class="btn btn-dark" style="font-size:.8rem;padding:8px 14px"><i class="fas fa-download"></i> הורד HTML</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="s4t1" onclick="setRecTab('prompt')">1. שלח ל-LLM</button>
+    <button class="tab-btn" id="s4t2" onclick="setRecTab('paste')">2. הדבק תשובה</button>
+  </div>
+  <div id="s4p_prompt" style="display:flex;flex-direction:column;gap:12px;padding:24px 28px">
+    <p style="font-size:.82rem;color:var(--muted)">הפרומפט הועתק ללוח. שלח ל-LLM — הוא מכיל את כל הפרטים שלך.</p>
+    <div style="position:relative"><textarea id="s4_prompt" class="prompt-box" rows="16" readonly dir="ltr"></textarea><div class="copy-badge" id="s4_badge">✓ הועתק!</div></div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="goStep(3)" class="btn btn-ghost"><i class="fas fa-arrow-right"></i> חזור</button>
+      <div style="display:flex;gap:10px">
+        <button onclick="copyText('s4_prompt','s4_badge')" class="btn btn-dark"><i class="fas fa-copy"></i> העתק שוב</button>
+        <button onclick="setRecTab('paste')" class="btn btn-primary">קיבלתי תשובה <i class="fas fa-arrow-left"></i></button>
+      </div>
+    </div>
+  </div>
+  <div id="s4p_paste" style="display:none;flex-direction:column;gap:12px;padding:24px 28px">
+    <p style="font-size:.82rem;color:var(--muted)">הדבק את ההמלצות שקיבלת מה-LLM.</p>
+    <textarea id="s4_paste" class="paste-box" rows="12" placeholder="הדבק את תגובת ה-LLM כאן..." dir="ltr"></textarea>
+    <div class="err-msg" id="s4_err"><i class="fas fa-exclamation-circle"></i><span id="s4_errMsg"></span></div>
+    <div id="s4_repair" class="repair-wrap">
+      <p style="font-size:.84rem;color:var(--gold);font-weight:800"><i class="fas fa-wrench"></i> פרומפט תיקון אוטומטי</p>
+      <div style="position:relative"><textarea id="s4_repairPrompt" class="prompt-box" rows="8" readonly dir="ltr" style="font-size:.72rem"></textarea><div class="copy-badge" id="s4_repairBadge">✓ הועתק!</div></div>
+      <button onclick="copyText('s4_repairPrompt','s4_repairBadge')" class="btn btn-dark" style="font-size:.8rem;padding:8px 14px;align-self:flex-start"><i class="fas fa-copy"></i> העתק פרומפט תיקון</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button onclick="setRecTab('prompt')" class="btn btn-ghost"><i class="fas fa-arrow-right"></i> חזור</button>
+      <button onclick="processRecs()" class="btn btn-primary"><i class="fas fa-magic"></i> הצג המלצות</button>
+    </div>
+  </div>
+  <div id="s4p_results" class="rec-preview" style="display:none"></div>
+</div>
+</div><!-- /.app -->
+
+<div id="toastWrap"></div>
+<div id="confirmModal" class="modal-overlay" onclick="if(event.target===this)confResolve(false)">
+  <div class="modal-box" style="max-width:420px">
+    <div style="padding:32px 28px 24px;text-align:center;flex:1">
+      <div class="confirm-icon" id="confIcon"></div>
+      <h3 id="confTitle" style="font-size:1.05rem;font-weight:900;margin-bottom:10px"></h3>
+      <p id="confMsg" style="font-size:.86rem;color:var(--muted);line-height:1.75;white-space:pre-line"></p>
+    </div>
+    <div class="modal-footer">
+      <button id="confCancel" onclick="confResolve(false)" class="btn btn-ghost" style="min-width:90px"></button>
+      <button id="confOk" onclick="confResolve(true)" class="btn btn-primary" style="min-width:100px"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const SK='pathgenius_v1';
+let S={step:1,topic:'',level:'',details:'',generalQs:null,generalAnswers:{},personalQs:null,personalAnswers:{},recommendations:null};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ── TOAST ── */
+function toast(msg,type='ok',ms=2800){
+  const w=$('toastWrap'),t=document.createElement('div');
+  t.className='toast'+(type==='err'?' terr':type==='info'?' tinfo':'');
+  t.textContent=(type==='ok'?'✓ ':type==='err'?'✗ ':'')+msg;
+  w.appendChild(t);
+  setTimeout(()=>{t.classList.add('fadeout');setTimeout(()=>t.remove(),350);},ms);
+}
+
+/* ── CONFIRM ── */
+let _confRes=null;
+function showConfirm({title,message,confirmLabel='אישור',cancelLabel='ביטול',variant='info'}){
+  return new Promise(res=>{
+    _confRes=res;
+    $('confTitle').textContent=title;$('confMsg').textContent=message;
+    $('confCancel').textContent=cancelLabel;$('confOk').textContent=confirmLabel;
+    $('confIcon').className='confirm-icon '+(variant==='danger'?'danger':'info');
+    $('confIcon').textContent=variant==='danger'?'🗑️':'ℹ️';
+    $('confirmModal').classList.add('open');
+  });
+}
+function confResolve(v){$('confirmModal').classList.remove('open');if(_confRes){_confRes(v);_confRes=null;}}
+
+/* ── COPY ── */
+function copyText(id,bid){
+  const ta=$(id);ta.select();ta.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(ta.value).then(()=>showBadge(bid)).catch(()=>{document.execCommand('copy');showBadge(bid);});
+}
+function showBadge(id){const b=$(id);if(!b)return;b.classList.add('show');setTimeout(()=>b.classList.remove('show'),2200);}
+
+/* ── ERRORS ── */
+function showErr(id,mid,msg){$(id).classList.add('show');$(mid).textContent=' '+msg;}
+function hideErr(id){$(id).classList.remove('show');}
+
+/* ── STORAGE ── */
+function save(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
+function load(){try{const r=localStorage.getItem(SK);if(r){Object.assign(S,JSON.parse(r));return true;}}catch(e){}return false;}
+
+/* ── NAVIGATION ── */
+function goStep(n){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  $('step'+n).classList.add('active');S.step=n;
+  for(let i=1;i<=4;i++){
+    const d=$('sdot'+i);d.classList.remove('active','done');
+    d.querySelector('.sdot-circle').innerHTML=i<n?'✓':String(i);
+    if(i<n)d.classList.add('done');if(i===n)d.classList.add('active');
+    if(i<4)$('sline'+i).classList.toggle('done',i<n);
+  }
+  updateProgress();updateHeader();save();
+}
+
+function updateProgress(){
+  const done=(S.generalQs?1:0)+(S.personalQs?1:0)+(S.recommendations?1:0);
+  const total=3;
+  $('gbar').style.opacity=done>0?'1':'0';
+  $('gfill').style.width=Math.round(done/total*100)+'%';
+}
+function updateHeader(){
+  const sub=$('headerSub');
+  if(S.topic&&S.step>1){
+    sub.innerHTML='v1.0 &nbsp;·&nbsp; <span style="color:var(--text);font-weight:600;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom">'+esc(S.topic)+'</span>';
+  } else {
+    sub.textContent='v1.0 — מאיץ למידה אישי בעזרת AI';
+  }
+}
+
+async function resetApp(){
+  const ok=await showConfirm({title:'איפוס הכלי',message:'כל הנתונים יימחקו.\nפעולה זו אינה ניתנת לביטול.',confirmLabel:'מחק הכל',cancelLabel:'ביטול',variant:'danger'});
+  if(!ok)return;
+  localStorage.removeItem(SK);location.reload();
+}
+
+/* ══ JSON PARSING (robust, same as BookGenius) ══ */
+function repairCC(str){let o='',inS=false,i=0;while(i<str.length){const c=str[i];if(inS&&c==='\\'){o+=c+(str[i+1]||'');i+=2;continue;}if(c==='"'){inS=!inS;o+=c;i++;continue;}if(inS){if(c==='\n'){o+='\\n';i++;continue;}if(c==='\r'){o+='\\r';i++;continue;}if(c==='\t'){o+='\\t';i++;continue;}const cc=c.charCodeAt(0);if(cc<32){o+='\\u'+cc.toString(16).padStart(4,'0');i++;continue;}}o+=c;i++;}return o;}
+function fixTC(s){return s.replace(/,(\s*[}\]])/g,'$1');}
+function robustParse(raw){
+  let s=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const m=s.match(/\{[\s\S]*\}/);
+  if(!m)throw new Error('לא נמצא JSON בתגובה. ייתכן שה-LLM שלח טקסט בלבד ללא JSON מובנה.');
+  const base=m[0];
+  const strats=[()=>base,()=>repairCC(base),()=>fixTC(repairCC(base))];
+  let lastErr;for(const f of strats){try{return JSON.parse(f());}catch(e){lastErr=e;}}
+  throw lastErr;
+}
+function buildFixPrompt(origPrompt,rawResp,errMsg){
+  const pv=rawResp.length>3000?rawResp.slice(0,3000)+'\n... [truncated]':rawResp;
+  return `Your previous JSON response could not be parsed.\nERROR: ${errMsg}\n\nCRITICAL JSON RULES:\n- Use \\n for newlines inside strings, NOT literal line breaks\n- No trailing commas before ] or }\n- All string values must be properly quoted\n\nYOUR PREVIOUS RESPONSE:\n${pv}\n\nReturn ONLY corrected, valid JSON — no markdown, no explanations.\n\nOriginal request:\n${origPrompt}`;
+}
+
+/* ══ PROMPT BUILDERS ══ */
+
+// ── SCHEMA for Questions ──
+const Q_SCHEMA=`{"topic_title":"[refined topic title in Hebrew]","topic_summary":"[1-2 sentences about this field in Hebrew]","questions":[{"id":1,"text":"[question in Hebrew]","selection_type":"single","options":["[option in Hebrew]","[option in Hebrew]","[option in Hebrew]","[option in Hebrew]"],"free_text_label":"[label for extra text field in Hebrew]"},{"id":2,"text":"...","selection_type":"multi","options":["...","...","..."],"free_text_label":"..."},...10 total]}`;
+
+function buildGeneralQsPrompt(){
+  const {topic,level,details}=S;
+  return `You are a world-class learning coach and curriculum expert. You are interfacing with an API, so respond ONLY with JSON — no markdown, no explanations, no preamble.
+
+A user wants to advance in the following field:
+TOPIC: ${topic}
+SELF-REPORTED CURRENT LEVEL: ${level}
+BACKGROUND & GOALS: ${details}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR TASK: Generate exactly 10 insightful diagnostic questions IN HEBREW to build a comprehensive understanding of this person's relationship with "${topic}".
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The 10 questions MUST collectively cover ALL of these diagnostic dimensions:
+1. Actual current experience and exposure level
+2. Specific sub-areas or aspects of the topic they are most drawn to
+3. History of prior learning attempts — what worked, what didn't
+4. Available time commitment (hours per week, schedule flexibility)
+5. Preferred learning style (hands-on, visual, reading, social, structured courses, etc.)
+6. Core motivation and "why" — what is driving this goal
+7. Available resources (budget for courses/equipment, tools they own, access to a teacher/mentor)
+8. Biggest fears, mental blocks, or anticipated obstacles
+9. How they define success — what does "mastery" look like to them specifically
+10. Support system — learning partner, community, accountability structures
+
+QUESTION DESIGN RULES:
+- Write ALL questions and ALL options in HEBREW
+- Each question MUST have 4-5 concrete, specific, non-overlapping answer options
+- selection_type "single" = only one answer is valid at a time
+- selection_type "multi" = multiple answers can simultaneously be true (e.g. learning style)
+- free_text_label must be a short, encouraging Hebrew label for an optional text field
+- Options must feel real and relatable — avoid vague filler options
+- Questions should flow naturally in difficulty and depth
+
+Return ONLY this exact JSON (no extra text before or after):
+${Q_SCHEMA}`;
+}
+
+function buildPersonalQsPrompt(){
+  const {topic,level,details}=S;
+  const formattedAnswers=formatAnswersForPrompt(S.generalQs,S.generalAnswers);
+  return `You are a world-class personalized learning coach. You are interfacing with an API, so respond ONLY with JSON — no markdown, no explanations.
+
+A user wants to advance in: ${topic}
+Self-reported level: ${level}
+Background: ${details}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIAGNOSTIC ANSWERS FROM GENERAL ASSESSMENT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${formattedAnswers}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR TASK: Generate exactly 10 HIGHLY PERSONALIZED follow-up questions IN HEBREW.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These questions must:
+- Directly reference and build upon the SPECIFIC answers above
+- Feel unmistakably personal — "this question was written for ME"
+- Drill into the most important patterns, gaps, and opportunities revealed
+- Never repeat what has already been asked
+
+The 10 personalized questions should explore:
+1. Clarify the single most important finding from the general assessment (the most significant factor)
+2. Drill deeper into their stated specific interest/sub-area
+3. Explore a specific challenge or obstacle they mentioned in depth
+4. Understand their precise, concrete definition of success with real examples
+5. Identify the very first comfortable step they could take this week
+6. Understand their physical learning environment and schedule in detail
+7. Explore their emotional relationship with setbacks and plateaus in this topic
+8. Understand what learning strategies have worked well for them in OTHER areas of life
+9. Identify their ideal pace, intensity, and feedback frequency
+10. Uncover any unique contextual factors, special access, or hidden resources they may have
+
+CRITICAL: Every question must VISIBLY relate to what they shared in the general assessment. Generic questions are unacceptable.
+
+Return ONLY this exact JSON format (topic_title and topic_summary should match the general assessment):
+${Q_SCHEMA}`;
+}
+
+function buildRecsPrompt(){
+  const {topic,level,details}=S;
+  const genAnswers=formatAnswersForPrompt(S.generalQs,S.generalAnswers);
+  const perAnswers=formatAnswersForPrompt(S.personalQs,S.personalAnswers);
+  return `You are a world-class personalized learning strategist. You are interfacing with an API, so respond ONLY with JSON — no markdown, no explanations, no preamble.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+USER PROFILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOPIC: ${topic}
+CURRENT LEVEL: ${level}
+BACKGROUND & GOALS: ${details}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL DIAGNOSTIC ANSWERS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${genAnswers}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERSONALIZED DIAGNOSTIC ANSWERS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${perAnswers}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR TASK: Create an exceptional, highly personalized learning advancement plan in HEBREW.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Principles:
+- Reference their ACTUAL answers throughout — name their specific situation
+- Base ALL time estimates on their STATED available hours
+- Roadmap phases must be realistic for their stated starting level
+- Resources must match their stated budget and learning style preferences
+- Quick wins must be achievable in the VERY FIRST WEEK
+- Be encouraging, specific, and honest — not generic
+
+Return ONLY this exact JSON structure (all text content in Hebrew):
+{
+  "summary": "[2-3 paragraph executive summary in Hebrew, personalized — mention their specific situation, goals, and what makes their path unique]",
+  "level": {
+    "title": "[Specific, nuanced level title in Hebrew, e.g. 'מתחיל עם מוטיבציה גבוהה ואין ציוד' or 'בינוני עם ניסיון עצמאי']",
+    "description": "[2-3 sentences about their specific standing and what it means for their journey]",
+    "current_strengths": ["[strength based on their specific answers]","[strength]","[strength]"],
+    "main_challenges": ["[challenge based on their specific answers]","[challenge]","[challenge]"]
+  },
+  "roadmap": [
+    {
+      "phase": 1,
+      "title": "[Phase title in Hebrew]",
+      "duration": "[Realistic duration based on their time, e.g. 'שבועות 1-6']",
+      "goal": "[Specific, measurable goal for this phase]",
+      "weekly_hours": [number — match their stated availability],
+      "activities": ["[Specific activity 1]","[activity 2]","[activity 3]","[activity 4]"],
+      "milestone": "[Concrete, verifiable milestone marking completion of this phase]"
+    }
+  ],
+  "resources": [
+    {
+      "category": "[ספרים|קורסים|אפליקציות|קהילות|כלים|יוטיוב]",
+      "items": [
+        {
+          "name": "[Real resource name]",
+          "description": "[What it is and why it is effective]",
+          "why_relevant": "[Why specifically for THIS user based on their answers]",
+          "priority": "[חובה|מומלץ|אופציונלי]"
+        }
+      ]
+    }
+  ],
+  "weekly_plan": {
+    "total_hours_per_week": "[e.g. '5 שעות']",
+    "sessions": [
+      {
+        "focus": "[Session focus in Hebrew]",
+        "duration_minutes": [number],
+        "activity_type": "[e.g. 'תרגול עצמאי|לימוד תיאוריה|צפייה בסרטון|שיעור עם מורה|פרויקט יצירתי']"
+      }
+    ]
+  },
+  "quick_wins": ["[Specific action achievable THIS WEEK that creates momentum — be concrete]","[quick win 2]","[quick win 3]"],
+  "common_mistakes": ["[Specific pitfall relevant to their level and learning style]","[mistake 2]","[mistake 3]"],
+  "motivation_tips": ["[Personalized motivation strategy based on what they shared about their why and obstacles]","[tip 2]","[tip 3]"],
+  "three_month_vision": "[A vivid, inspiring, specific paragraph in Hebrew about where they will realistically be in 3 months if they follow this plan — reference their specific goal and situation]"
+}`;
+}
+
+/* ── FORMAT ANSWERS ── */
+function formatAnswersForPrompt(qs,answers){
+  if(!qs||!qs.questions)return'(no data)';
+  return qs.questions.map(q=>{
+    const a=answers[q.id]||{selected:[],freeText:''};
+    const sel=a.selected.length?a.selected.join(' | '):'(לא נבחרה תשובה)';
+    const ft=a.freeText?`\n   Additional notes: ${a.freeText}`:'';
+    return `Q${q.id}: ${q.text}\n   Selected: ${sel}${ft}`;
+  }).join('\n\n');
+}
+
+/* ══ STEP 1 ══ */
+function step1Submit(){
+  const topic=$('s1_topic').value.trim();
+  const level=$('s1_level').value.trim();
+  const details=$('s1_details').value.trim();
+  if(!topic||!details){toast('אנא מלא לפחות נושא ופרטים','err');return;}
+  S.topic=topic;S.level=level||'לא צוין';S.details=details;
+  $('s2_prompt').value=buildGeneralQsPrompt();
+  goStep(2);
+  setQTab(2,'prompt');
+  setTimeout(()=>copyText('s2_prompt','s2_badge'),400);
+}
+
+/* ══ STEP 2 & 3 — TABS ══ */
+function setQTab(stepNum,tab){
+  const prefix='s'+stepNum;
+  $(`${prefix}p_prompt`).style.display=tab==='prompt'?'flex':'none';
+  $(`${prefix}p_paste`).style.display=tab==='paste'?'flex':'none';
+  $(`${prefix}p_questions`).style.display=tab==='questions'?'flex':'none';
+  $(`${prefix}t1`).classList.toggle('active',tab==='prompt');
+  $(`${prefix}t2`).classList.toggle('active',tab==='paste');
+  const t3=$(`${prefix}t3`);
+  if(t3){
+    t3.classList.toggle('active',tab==='questions');
+    if(tab==='questions')t3.style.display='';
+  }
+  if(tab==='prompt')setTimeout(()=>copyText(`${prefix}_prompt`,`${prefix}_badge`),250);
+}
+
+/* ══ PROCESS QUESTIONS ══ */
+function processQs(stepNum){
+  const prefix='s'+stepNum;
+  hideErr(`${prefix}_err`);
+  $(`${prefix}_repair`).style.display='none';
+  const raw=$(prefix+'_paste').value.trim();
+  if(!raw){showErr(`${prefix}_err`,`${prefix}_errMsg`,'אנא הדבק את תגובת ה-LLM');return;}
+  try{
+    const data=robustParse(raw);
+    if(!data.questions||!Array.isArray(data.questions)||data.questions.length===0)
+      throw new Error('המבנה חסר את מערך "questions"');
+    if(data.questions.length<5)
+      throw new Error(`התקבלו רק ${data.questions.length} שאלות — צפינו לפחות 10`);
+    // Validate each question has required fields
+    data.questions.forEach((q,i)=>{
+      if(!q.text)throw new Error(`שאלה ${i+1} חסרת שדה "text"`);
+      if(!q.options||!Array.isArray(q.options)||q.options.length<2)throw new Error(`שאלה ${i+1} חסרת אפשרויות תשובה`);
+      if(!q.id)q.id=i+1;
+      if(!q.selection_type)q.selection_type='single';
+    });
+    if(stepNum===2){
+      S.generalQs=data;S.generalAnswers={};
+    } else {
+      S.personalQs=data;S.personalAnswers={};
+    }
+    renderQuestions(stepNum,data);
+    setQTab(stepNum,'questions');
+    toast(`${data.questions.length} שאלות נטענו בהצלחה`,'info',2200);
+    save();
+  }catch(e){
+    showErr(`${prefix}_err`,`${prefix}_errMsg`,e.message);
+    const origPrompt=stepNum===2?buildGeneralQsPrompt():buildPersonalQsPrompt();
+    $(prefix+'_repairPrompt').value=buildFixPrompt(origPrompt,raw,e.message);
+    $(prefix+'_repair').style.display='flex';
+    setTimeout(()=>copyText(`${prefix}_repairPrompt`,`${prefix}_repairBadge`),200);
+  }
+}
+
+/* ══ RENDER QUESTIONS ══ */
+function renderQuestions(stepNum,data){
+  const prefix='s'+stepNum;
+  const container=$(prefix+'_qContainer');
+  const answers=stepNum===2?S.generalAnswers:S.personalAnswers;
+  container.innerHTML='';
+  data.questions.forEach(q=>{
+    const isMulti=q.selection_type==='multi';
+    const typeLabel=isMulti?'בחר כמה שמתאים':'בחר אחד';
+    const typeCls=isMulti?'q-badge-multi':'q-badge-single';
+    const savedA=answers[q.id]||{selected:[],freeText:''};
+    const isAnswered=savedA.selected.length>0;
+
+    const card=document.createElement('div');
+    card.className='question-card'+(isAnswered?' answered':'');
+    card.id=`qcard_${stepNum}_${q.id}`;
+
+    const optionsHTML=(q.options||[]).map(opt=>{
+      const isSel=savedA.selected.includes(opt);
+      return `<div class="q-option${isSel?' sel':''}" data-step="${stepNum}" data-qid="${q.id}" data-val="${esc(opt).replace(/"/g,'&quot;')}" onclick="toggleQOpt(this)">${esc(opt)}</div>`;
+    }).join('');
+
+    const freeLabel=q.free_text_label||'הוספות / הערות';
+    card.innerHTML=`
+      <div class="q-header">
+        <div class="q-num">${q.id}</div>
+        <div class="q-text">${esc(q.text)}</div>
+        <span class="q-badge ${typeCls}">${typeLabel}</span>
+      </div>
+      <div class="q-options">${optionsHTML}</div>
+      <div class="q-free-wrap">
+        <div class="q-free-label">${esc(freeLabel)} (רשות)</div>
+        <textarea class="q-free" data-step="${stepNum}" data-qid="${q.id}" placeholder="הוסף פרטים נוספים..." onchange="updateQFreeText(this)">${esc(savedA.freeText||'')}</textarea>
+      </div>`;
+    container.appendChild(card);
+  });
+  updateQProgress(stepNum);
+}
+
+/* ══ TOGGLE OPTION ══ */
+function toggleQOpt(el){
+  const stepNum=parseInt(el.dataset.step);
+  const qid=parseInt(el.dataset.qid);
+  const val=el.dataset.val;
+  const answers=stepNum===2?S.generalAnswers:S.personalAnswers;
+  const qs=stepNum===2?S.generalQs:S.personalQs;
+  if(!qs)return;
+  const q=qs.questions.find(q=>q.id===qid);if(!q)return;
+  if(!answers[qid])answers[qid]={selected:[],freeText:''};
+  if(q.selection_type==='single'){
+    answers[qid].selected=[val];
+    el.closest('.q-options').querySelectorAll('.q-option').forEach(o=>o.classList.remove('sel'));
+    el.classList.add('sel');
+  } else {
+    const idx=answers[qid].selected.indexOf(val);
+    if(idx>=0){answers[qid].selected.splice(idx,1);el.classList.remove('sel');}
+    else{answers[qid].selected.push(val);el.classList.add('sel');}
+  }
+  const card=$(`qcard_${stepNum}_${qid}`);
+  if(card)card.classList.toggle('answered',answers[qid].selected.length>0);
+  updateQProgress(stepNum);
+  save();
+}
+
+function updateQFreeText(el){
+  const stepNum=parseInt(el.dataset.step);
+  const qid=parseInt(el.dataset.qid);
+  const answers=stepNum===2?S.generalAnswers:S.personalAnswers;
+  if(!answers[qid])answers[qid]={selected:[],freeText:''};
+  answers[qid].freeText=el.value;
+  save();
+}
+
+function updateQProgress(stepNum){
+  const prefix='s'+stepNum;
+  const qs=stepNum===2?S.generalQs:S.personalQs;
+  const answers=stepNum===2?S.generalAnswers:S.personalAnswers;
+  if(!qs)return;
+  const total=qs.questions.length;
+  const done=qs.questions.filter(q=>answers[q.id]&&answers[q.id].selected.length>0).length;
+  const pct=total?Math.round(done/total*100):0;
+  $(prefix+'_progFill').style.width=pct+'%';
+  $(prefix+'_progText').textContent=`${done} מתוך ${total} שאלות נענו`;
+  const nextBtn=$(prefix+'_nextBtn');
+  if(nextBtn)nextBtn.disabled=done<total;
+}
+
+/* ══ PROCEED ══ */
+function proceedToStep3(){
+  // Build personalized questions prompt with answers
+  $('s3_prompt').value=buildPersonalQsPrompt();
+  goStep(3);
+  setQTab(3,'prompt');
+  setTimeout(()=>copyText('s3_prompt','s3_badge'),400);
+}
+
+function proceedToStep4(){
+  // Build final recommendations prompt with all answers
+  $('s4_prompt').value=buildRecsPrompt();
+  goStep(4);
+  setRecTab('prompt');
+  setTimeout(()=>copyText('s4_prompt','s4_badge'),400);
+}
+
+/* ══ STEP 4 ══ */
+function setRecTab(tab){
+  $('s4p_prompt').style.display=tab==='prompt'?'flex':'none';
+  $('s4p_paste').style.display=tab==='paste'?'flex':'none';
+  $('s4t1').classList.toggle('active',tab==='prompt');
+  $('s4t2').classList.toggle('active',tab==='paste');
+  if(tab==='prompt')setTimeout(()=>copyText('s4_prompt','s4_badge'),250);
+}
+
+function processRecs(){
+  hideErr('s4_err');$('s4_repair').style.display='none';
+  const raw=$('s4_paste').value.trim();
+  if(!raw){showErr('s4_err','s4_errMsg','אנא הדבק את תגובת ה-LLM');return;}
+  try{
+    const data=robustParse(raw);
+    if(!data.summary&&!data.level&&!data.roadmap)
+      throw new Error('המבנה לא מכיל את השדות הנדרשים (summary, level, roadmap)');
+    S.recommendations=data;
+    renderRecommendations(data);
+    $('s4p_results').style.display='block';
+    $('s4p_prompt').style.display='none';
+    $('s4p_paste').style.display='none';
+    $('s4t1').classList.remove('active');$('s4t2').classList.remove('active');
+    $('s4_actions').style.display='flex';
+    $('s4_title').textContent='🏆 המלצות מותאמות אישית';
+    $('s4_sub').textContent=`תוכנית למידה ל-${esc(S.topic)}`;
+    updateProgress();save();
+    toast('ההמלצות הוצגו בהצלחה!','ok',2500);
+  }catch(e){
+    showErr('s4_err','s4_errMsg',e.message);
+    $('s4_repairPrompt').value=buildFixPrompt(buildRecsPrompt(),raw,e.message);
+    $('s4_repair').style.display='flex';
+    setTimeout(()=>copyText('s4_repairPrompt','s4_repairBadge'),200);
+  }
+}
+
+/* ══ RENDER RECOMMENDATIONS ══ */
+const PHASE_COLORS=['#7c68d0','#22d3ee','#1de98b','#e8b923'];
+const CAT_ICONS={'ספרים':'📚','קורסים':'🎓','אפליקציות':'📱','קהילות':'👥','כלים':'🛠️','יוטיוב':'▶️','אתרים':'🌐'};
+
+function renderRecommendations(d){
+  const container=$('s4p_results');
+  let h='';
+
+  // ── Header card ──
+  const levelTitle=d.level&&d.level.title?d.level.title:'';
+  h+=`<div class="rec-header-card">
+    ${levelTitle?`<div class="rec-level-badge">⭐ ${esc(levelTitle)}</div>`:''}
+    <div class="rec-header-title">${esc(S.topic)}</div>
+    <div class="rec-header-summary">${esc(d.summary||'')}</div>
+  </div>`;
+
+  // ── Assessment ──
+  if(d.level){
+    h+=`<div style="margin-bottom:1.5rem"><div class="rec-section-title">📊 הערכת מצב</div>`;
+    h+=`<p style="font-size:.88rem;color:#444;line-height:1.75;margin-bottom:12px">${esc(d.level.description||'')}</p>`;
+    h+=`<div class="rec-assessment-grid">`;
+    if(d.level.current_strengths&&d.level.current_strengths.length){
+      h+=`<div class="rec-assess-card"><h4 style="color:#0a6b42">💪 חוזקות קיימות</h4>`;
+      h+=d.level.current_strengths.map(s=>`<span class="rec-tag rec-tag-green">${esc(s)}</span>`).join('');
+      h+=`</div>`;
+    }
+    if(d.level.main_challenges&&d.level.main_challenges.length){
+      h+=`<div class="rec-assess-card"><h4 style="color:#9e1530">🎯 אזורי פוקוס</h4>`;
+      h+=d.level.main_challenges.map(c=>`<span class="rec-tag rec-tag-red">${esc(c)}</span>`).join('');
+      h+=`</div>`;
+    }
+    h+=`</div></div>`;
+  }
+
+  // ── Roadmap ──
+  if(d.roadmap&&d.roadmap.length){
+    h+=`<div style="margin-bottom:1.5rem"><div class="rec-section-title">🗺️ מפת הדרך לצמיחה</div>`;
+    d.roadmap.forEach((phase,i)=>{
+      const color=PHASE_COLORS[i]||PHASE_COLORS[0];
+      h+=`<div class="rec-phase">
+        <div class="rec-phase-bar" style="background:${color}"></div>
+        <div class="rec-phase-num" style="color:${color}">שלב ${phase.phase}</div>
+        <div class="rec-phase-title">${esc(phase.title||'')}</div>
+        <div class="rec-phase-chips">
+          ${phase.duration?`<span class="rec-chip">📅 ${esc(phase.duration)}</span>`:''}
+          ${phase.weekly_hours?`<span class="rec-chip">⏱️ ${esc(String(phase.weekly_hours))} שעות/שבוע</span>`:''}
+        </div>
+        ${phase.goal?`<p style="font-size:.83rem;color:#555;margin-bottom:8px;font-style:italic">${esc(phase.goal)}</p>`:''}
+        ${phase.activities&&phase.activities.length?`<div class="rec-phase-activities">
+          ${phase.activities.map(a=>`<div class="rec-phase-activity"><div class="rec-phase-activity-dot" style="background:${color}"></div>${esc(a)}</div>`).join('')}
+        </div>`:''}
+        ${phase.milestone?`<div class="rec-milestone"><i class="fas fa-flag" style="color:#1d7fc4"></i>${esc(phase.milestone)}</div>`:''}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  // ── Resources ──
+  if(d.resources&&d.resources.length){
+    h+=`<div style="margin-bottom:1.5rem"><div class="rec-section-title">📚 משאבים מומלצים</div>`;
+    d.resources.forEach(group=>{
+      const catIcon=CAT_ICONS[group.category]||'🔗';
+      h+=`<div class="rec-resource-group">
+        <div class="rec-resource-group-header"><span class="cat-icon">${catIcon}</span><span class="cat-name">${esc(group.category||'')}</span></div>`;
+      if(group.items&&group.items.length){
+        group.items.forEach(item=>{
+          const pCls=item.priority==='חובה'?'rec-priority-must':item.priority==='מומלץ'?'rec-priority-rec':'rec-priority-opt';
+          h+=`<div class="rec-resource-item">
+            <div class="rec-resource-name">
+              ${item.priority?`<span class="rec-priority ${pCls}">${esc(item.priority)}</span>`:''}
+              ${esc(item.name||'')}
+            </div>
+            ${item.description?`<div class="rec-resource-desc">${esc(item.description)}</div>`:''}
+            ${item.why_relevant?`<div class="rec-resource-why">💡 ${esc(item.why_relevant)}</div>`:''}
+          </div>`;
+        });
+      }
+      h+=`</div>`;
+    });
+    h+=`</div>`;
+  }
+
+  // ── Weekly Plan ──
+  if(d.weekly_plan&&d.weekly_plan.sessions&&d.weekly_plan.sessions.length){
+    h+=`<div style="margin-bottom:1.5rem"><div class="rec-section-title">📅 תוכנית שבועית</div>`;
+    if(d.weekly_plan.total_hours_per_week){
+      h+=`<div style="font-size:.83rem;color:#666;margin-bottom:12px">סה"כ: <strong style="color:#3a22a0">${esc(d.weekly_plan.total_hours_per_week)}</strong> לשבוע</div>`;
+    }
+    h+=`<div class="rec-schedule-list">`;
+    d.weekly_plan.sessions.forEach((session,i)=>{
+      h+=`<div class="rec-session">
+        <div class="rec-session-num">${i+1}</div>
+        <div class="rec-session-info">
+          <div class="rec-session-focus">${esc(session.focus||'')}</div>
+          <div class="rec-session-meta">
+            ${session.duration_minutes?`<span>⏱️ ${session.duration_minutes} דקות</span>`:''}
+            ${session.activity_type?`<span>📌 ${esc(session.activity_type)}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // ── Lists grid ──
+  const hasQW=d.quick_wins&&d.quick_wins.length;
+  const hasCM=d.common_mistakes&&d.common_mistakes.length;
+  const hasMT=d.motivation_tips&&d.motivation_tips.length;
+  if(hasQW||hasCM||hasMT){
+    h+=`<div class="rec-list-grid">`;
+    if(hasQW){
+      h+=`<div class="rec-list-card"><h4 style="color:#0a6b42">⚡ ניצחונות מהירים</h4>`;
+      h+=d.quick_wins.map(w=>`<div class="rec-list-item"><span class="rec-list-icon">✅</span>${esc(w)}</div>`).join('');
+      h+=`</div>`;
+    }
+    if(hasCM){
+      h+=`<div class="rec-list-card"><h4 style="color:#9e1530">⚠️ טעויות נפוצות</h4>`;
+      h+=d.common_mistakes.map(m=>`<div class="rec-list-item"><span class="rec-list-icon">❌</span>${esc(m)}</div>`).join('');
+      h+=`</div>`;
+    }
+    if(hasMT){
+      h+=`<div class="rec-list-card"><h4 style="color:#7c68d0">💎 טיפים למוטיבציה</h4>`;
+      h+=d.motivation_tips.map(t=>`<div class="rec-list-item"><span class="rec-list-icon">💡</span>${esc(t)}</div>`).join('');
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // ── 3-Month Vision ──
+  if(d.three_month_vision){
+    h+=`<div class="rec-vision-card">
+      <h4><i class="fas fa-telescope" style="color:#a599ff;font-size:.85rem"></i> החזון לעוד 3 חודשים</h4>
+      <p>${esc(d.three_month_vision)}</p>
+    </div>`;
+  }
+
+  container.innerHTML=h;
+}
+
+/* ══ DOWNLOAD ══ */
+function downloadRecs(){
+  if(!S.recommendations){toast('אין המלצות להורדה','err');return;}
+  const preview=$('s4p_results').cloneNode(true);
+  const html=`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><title>PathGenius — ${esc(S.topic)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Heebo',sans-serif;background:#f8f7fe;color:#18181e;direction:rtl;padding:2rem 1rem 5rem;max-width:850px;margin:0 auto;}
+${document.querySelector('style').textContent.split('/* ── MODAL ──')[0].replace(/\.app[^{]*{[^}]*}/g,'').replace(/:root{[^}]*}/,'')}
+.rec-preview{background:#f8f7fe;padding:0;max-height:none}
+</style></head><body><div class="rec-preview">${preview.innerHTML}</div></body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='PathGenius_'+S.topic.replace(/[^\u0590-\u05FFa-zA-Z0-9 _-]/g,'_').trim()+'.html';
+  a.click();URL.revokeObjectURL(url);
+}
+
+/* ══ KEYBOARD ══ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if($('confirmModal').classList.contains('open')){confResolve(false);return;}
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    e.preventDefault();
+    if(S.step===1)step1Submit();
+    else if(S.step===2)processQs(2);
+    else if(S.step===3)processQs(3);
+    else if(S.step===4)processRecs();
+  }
+});
+
+/* ══ INIT ══ */
+(async function init(){
+  const hasSaved=load();
+  if(hasSaved&&S.step>1&&S.topic){
+    const resume=await showConfirm({
+      title:'המשך מאיפה שהפסקת',
+      message:`נמצאה התקדמות שמורה:\n"${S.topic}"\n\nהאם להמשיך?`,
+      confirmLabel:'המשך',cancelLabel:'התחל מחדש',variant:'info'
+    });
+    if(resume){
+      // Restore form
+      $('s1_topic').value=S.topic||'';
+      $('s1_level').value=S.level||'';
+      $('s1_details').value=S.details||'';
+      if(S.step>=2){$('s2_prompt').value=buildGeneralQsPrompt();}
+      if(S.step>=3){$('s3_prompt').value=buildPersonalQsPrompt();}
+      if(S.step>=4){$('s4_prompt').value=buildRecsPrompt();}
+      if(S.step===4&&S.recommendations){
+        goStep(4);setRecTab('prompt');
+        renderRecommendations(S.recommendations);
+        $('s4p_results').style.display='block';
+        $('s4p_prompt').style.display='none';$('s4p_paste').style.display='none';
+        $('s4t1').classList.remove('active');$('s4t2').classList.remove('active');
+        $('s4_actions').style.display='flex';
+        $('s4_title').textContent='🏆 המלצות מותאמות אישית';
+        $('s4_sub').textContent=`תוכנית למידה ל-${S.topic}`;
+      } else if(S.step===3&&S.personalQs){
+        goStep(3);
+        renderQuestions(3,S.personalQs);
+        setQTab(3,'questions');
+      } else if(S.step===2&&S.generalQs){
+        goStep(2);
+        renderQuestions(2,S.generalQs);
+        setQTab(2,'questions');
+      } else {
+        goStep(S.step);
+      }
+      return;
+    }
+    localStorage.removeItem(SK);
+    Object.assign(S,{step:1,topic:'',level:'',details:'',generalQs:null,generalAnswers:{},personalQs:null,personalAnswers:{},recommendations:null});
+  }
+  goStep(1);
+})();
+</script>
+</body>
+</html>
